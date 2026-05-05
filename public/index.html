@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>黑坑 AI 助手</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --green: #1a6b4a;
+    --green-light: #e8f5ee;
+    --green-mid: #2d9b6a;
+    --amber: #b45309;
+    --amber-light: #fef3c7;
+    --red-light: #fee2e2;
+    --red: #991b1b;
+    --ink: #1c1c1e;
+    --ink2: #48484a;
+    --ink3: #8e8e93;
+    --surface: #f5f5f0;
+    --card: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Noto Sans SC', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; max-width: 480px; margin: 0 auto; }
+  .hero { background: var(--green); padding: 32px 20px 24px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; right: -20px; top: -20px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,0.05); }
+  .hero-icon { font-size: 36px; margin-bottom: 10px; display: block; }
+  .hero h1 { font-family: 'Noto Serif SC', serif; font-size: 24px; font-weight: 600; color: #fff; letter-spacing: 0.02em; }
+  .hero p { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 4px; }
+  .content { padding: 16px; }
+  .section { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .section-title { font-size: 12px; font-weight: 500; color: var(--ink3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { margin-bottom: 10px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--ink3); margin-bottom: 5px; }
+  .field select, .field input { width: 100%; padding: 9px 12px; font-size: 14px; font-family: 'Noto Sans SC', sans-serif; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; appearance: none; -webkit-appearance: none; outline: none; }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e93' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tag { padding: 6px 12px; border-radius: 20px; font-size: 13px; border: 1px solid var(--border); cursor: pointer; color: var(--ink2); background: var(--surface); transition: all 0.15s; user-select: none; }
+  .tag.on { background: var(--green-light); color: var(--green); border-color: #a7d7bc; font-weight: 500; }
+  .btn-wrap { padding: 4px 0 8px; }
+  .btn-submit { width: 100%; padding: 14px; font-size: 16px; font-family: 'Noto Sans SC', sans-serif; font-weight: 500; color: #fff; background: var(--green); border: none; border-radius: var(--radius); cursor: pointer; letter-spacing: 0.05em; transition: opacity 0.15s, transform 0.1s; }
+  .btn-submit:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tip { text-align: center; font-size: 12px; color: var(--ink3); margin-top: 8px; }
+  .loading { display: none; text-align: center; padding: 28px 20px; background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 12px; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--green-light); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { font-size: 14px; color: var(--ink3); }
+  .result { display: none; margin-bottom: 16px; }
+  .result-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+  .result-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .badge { font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 20px; }
+  .badge-good { background: var(--green-light); color: var(--green); }
+  .badge-mid { background: var(--amber-light); color: var(--amber); }
+  .badge-bad { background: var(--red-light); color: var(--red); }
+  .result-subtitle { font-size: 13px; color: var(--ink3); }
+  .meta-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+  .meta-item { padding: 12px 16px; }
+  .meta-item:first-child { border-right: 1px solid var(--border); }
+  .meta-label { font-size: 11px; color: var(--ink3); margin-bottom: 3px; }
+  .meta-val { font-size: 13px; color: var(--ink); font-weight: 500; line-height: 1.4; }
+  .advice-body { padding: 16px; font-size: 14px; color: var(--ink2); line-height: 1.85; white-space: pre-wrap; }
+  .result-footer { padding: 10px 16px; background: var(--surface); font-size: 12px; color: var(--ink3); text-align: center; border-top: 1px solid var(--border); }
+  .error-box { display: none; background: var(--red-light); border-radius: var(--radius); padding: 14px 16px; font-size: 14px; color: var(--red); margin-bottom: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <span class="hero-icon">🎣</span>
+  <h1>黑坑 AI 助手</h1>
+  <p>填入条件，获取专属作钓方案</p>
+</div>
+<div class="content">
+  <div class="section">
+    <div class="section-title">环境条件</div>
+    <div class="grid2">
+      <div class="field"><label>季节</label><select id="season"><option>春季</option><option>夏季</option><option selected>秋季</option><option>冬季</option></select></div>
+      <div class="field"><label>天气</label><select id="weather"><option>晴天</option><option selected>多云</option><option>阴天</option><option>小雨</option><option>大雨</option></select></div>
+      <div class="field"><label>气温 (°C)</label><input type="number" id="temp" value="22" min="-5" max="42" /></div>
+      <div class="field"><label>风力</label><select id="wind"><option>无风</option><option selected>微风</option><option>3-4级</option><option>5级以上</option></select></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">鱼塘情况</div>
+    <div class="field"><label>目标鱼种（可多选）</label><div class="tags" id="fish-tags"><span class="tag on" data-v="鲤鱼">鲤鱼</span><span class="tag" data-v="草鱼">草鱼</span><span class="tag" data-v="鲫鱼">鲫鱼</span><span class="tag" data-v="大头鱼">大头鱼</span><span class="tag" data-v="罗非">罗非</span><span class="tag" data-v="混养">混养</span></div></div>
+    <div class="gri<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>黑坑 AI 助手</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --green: #1a6b4a;
+    --green-light: #e8f5ee;
+    --green-mid: #2d9b6a;
+    --amber: #b45309;
+    --amber-light: #fef3c7;
+    --red-light: #fee2e2;
+    --red: #991b1b;
+    --ink: #1c1c1e;
+    --ink2: #48484a;
+    --ink3: #8e8e93;
+    --surface: #f5f5f0;
+    --card: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Noto Sans SC', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; max-width: 480px; margin: 0 auto; }
+  .hero { background: var(--green); padding: 32px 20px 24px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; right: -20px; top: -20px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,0.05); }
+  .hero-icon { font-size: 36px; margin-bottom: 10px; display: block; }
+  .hero h1 { font-family: 'Noto Serif SC', serif; font-size: 24px; font-weight: 600; color: #fff; letter-spacing: 0.02em; }
+  .hero p { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 4px; }
+  .content { padding: 16px; }
+  .section { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .section-title { font-size: 12px; font-weight: 500; color: var(--ink3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { margin-bottom: 10px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--ink3); margin-bottom: 5px; }
+  .field select, .field input { width: 100%; padding: 9px 12px; font-size: 14px; font-family: 'Noto Sans SC', sans-serif; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; appearance: none; -webkit-appearance: none; outline: none; }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e93' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tag { padding: 6px 12px; border-radius: 20px; font-size: 13px; border: 1px solid var(--border); cursor: pointer; color: var(--ink2); background: var(--surface); transition: all 0.15s; user-select: none; }
+  .tag.on { background: var(--green-light); color: var(--green); border-color: #a7d7bc; font-weight: 500; }
+  .btn-wrap { padding: 4px 0 8px; }
+  .btn-submit { width: 100%; padding: 14px; font-size: 16px; font-family: 'Noto Sans SC', sans-serif; font-weight: 500; color: #fff; background: var(--green); border: none; border-radius: var(--radius); cursor: pointer; letter-spacing: 0.05em; transition: opacity 0.15s, transform 0.1s; }
+  .btn-submit:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tip { text-align: center; font-size: 12px; color: var(--ink3); margin-top: 8px; }
+  .loading { display: none; text-align: center; padding: 28px 20px; background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 12px; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--green-light); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { font-size: 14px; color: var(--ink3); }
+  .result { display: none; margin-bottom: 16px; }
+  .result-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+  .result-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .badge { font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 20px; }
+  .badge-good { background: var(--green-light); color: var(--green); }
+  .badge-mid { background: var(--amber-light); color: var(--amber); }
+  .badge-bad { background: var(--red-light); color: var(--red); }
+  .result-subtitle { font-size: 13px; color: var(--ink3); }
+  .meta-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+  .meta-item { padding: 12px 16px; }
+  .meta-item:first-child { border-right: 1px solid var(--border); }
+  .meta-label { font-size: 11px; color: var(--ink3); margin-bottom: 3px; }
+  .meta-val { font-size: 13px; color: var(--ink); font-weight: 500; line-height: 1.4; }
+  .advice-body { padding: 16px; font-size: 14px; color: var(--ink2); line-height: 1.85; white-space: pre-wrap; }
+  .result-footer { padding: 10px 16px; background: var(--surface); font-size: 12px; color: var(--ink3); text-align: center; border-top: 1px solid var(--border); }
+  .error-box { display: none; background: var(--red-light); border-radius: var(--radius); padding: 14px 16px; font-size: 14px; color: var(--red); margin-bottom: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <span class="hero-icon">🎣</span>
+  <h1>黑坑 AI 助手</h1>
+  <p>填入条件，获取专属作钓方案</p>
+</div>
+<div class="content">
+  <div class="section">
+    <div class="section-title">环境条件</div>
+    <div class="grid2">
+      <div class="field"><label>季节</label><select id="season"><option>春季</option><option>夏季</option><option selected>秋季</option><option>冬季</option></select></div>
+      <div class="field"><label>天气</label><select id="weather"><option>晴天</option><option selected>多云</option><option>阴天</option><option>小雨</option><option>大雨</option></select></div>
+      <div class="field"><label>气温 (°C)</label><input type="number" id="temp" value="22" min="-5" max="42" /></div>
+      <div class="field"><label>风力</label><select id="wind"><option>无风</option><option selected>微风</option><option>3-4级</option><option>5级以上</option></select></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">鱼塘情况</div>
+    <div class="field"><label>目标鱼种（可多选）</label><div class="tags" id="fish-tags"><span class="tag on" data-v="鲤鱼">鲤鱼</span><span class="tag" data-v="草鱼">草鱼</span><span class="tag" data-v="鲫鱼">鲫鱼</span><span class="tag" data-v="大头鱼">大头鱼</span><span class="tag" data-v="罗非">罗非</span><span class="tag" data-v="混养">混养</span></div></div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="field"><label>水深</label><select id="depth"><option>1米以内</option><option selected>1-2米</option><option>2-3米</option><option>3米以上</option></select></div>
+      <div class="field"><label>最近鱼情</label><select id="fishstatus"><option>鱼口很好</option><option selected>正常</option><option>鱼口较差</option><option>几乎不开口</option></select></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">钓手装备</div>
+    <div class="grid2">
+      <div class="field"><label>竿长</label><select id="rod"><option>3.6米</option><option>4.5米</option><option selected>5.4米</option><option>6.3米</option><option>7.2米以上</option></select></div>
+      <div class="field"><label>线组</label><select id="line"><option>0.8+0.4</option><option>1.0+0.6</option><option selected>1.5+0.8</option><option>2.0+1.0</option><option>2.5+以上</option></select></div>
+    </div>
+    <div class="field"><label>钓法</label><div class="tags" id="method-tags"><span class="tag on" data-v="底钓">底钓</span><span class="tag" data-v="行程钓">行程钓</span><span class="tag" data-v="飞铅">飞铅</span><span class="tag" data-v="钓浮">钓浮</span></div></div>
+  </div>
+  <div class="error-box" id="error-box"></div>
+  <div class="loading" id="loading"><div class="spinner"></div><p>AI 正在分析鱼情，请稍候...</p></div>
+  <div class="result" id="result">
+    <div class="result-card">
+      <div class="result-header"><span class="badge" id="res-badge">鱼情良好</span><span class="result-subtitle" id="res-subtitle"></span></div>
+      <div class="meta-row"><div class="meta-item"><div class="meta-label">调钓建议</div><div class="meta-val" id="res-tiaodiao">—</div></div><div class="meta-item"><div class="meta-label">饵料方向</div><div class="meta-val" id="res-bait">—</div></div></div>
+      <div class="advice-body" id="res-body"></div>
+      <div class="result-footer">以上建议由 AI 生成，实际鱼情以现场为准</div>
+    </div>
+  </div>
+  <div class="btn-wrap">
+    <button class="btn-submit" id="btn" onclick="submit()">获取 AI 作钓建议</button>
+    <p class="tip">由 MiniMax AI 驱动</p>
+  </div>
+</div><script>
+document.querySelectorAll('#fish-tags .tag').forEach(t => {
+  t.onclick = () => t.classList.toggle('on');
+});
+document.querySelectorAll('#method-tags .tag').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('#method-tags .tag').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+  };
+});
+
+function getTags(id) {
+  const sel = [...document.querySelectorAll('#' + id + ' .tag.on')].map(t => t.dataset.v);
+  return sel.length ? sel.join('、') : '未指定';
+}
+
+async function submit() {
+  const body = {
+    season: document.getElementById('season').value,
+    weather: document.getElementById('weather').value,
+    temp: document.getElementById('temp').value,
+    wind: document.getElementById('wind').value,
+    fish: getTags('fish-tags'),
+    depth: document.getElementById('depth').value,
+    fishstatus: document.getElementById('fishstatus').value,
+    rod: document.getElementById('rod').value,
+    line: document.getElementById('line').value,
+    method: getTags('method-tags'),
+  };
+
+  document.getElementById('btn').disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/advice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '请求失败');
+    render(data.result, body);
+  } catch (e) {
+    showError(e.message);
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('btn').disabled = false;
+}
+
+function render(text, params) {
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  const rating = lines[0] || '鱼情良好';
+  const tiaodiao = lines[1] || '';
+  const bait = lines[2] || '';
+  const tips = lines.slice(3).join('\n');
+
+  const badge = document.getElementById('res-badge');
+  if (rating.includes('极佳')) { badge.textContent = '鱼情极佳'; badge.className = 'badge badge-good'; }
+  else if (rating.includes('良好')) { badge.textContent = '鱼情良好'; badge.className = 'badge badge-good'; }
+  else if (rating.includes('一般')) { badge.textContent = '鱼情一般'; badge.className = 'badge badge-mid'; }
+  else { badge.textContent = '鱼情较差'; badge.className = 'badge badge-bad'; }
+
+  document.getElementById('res-subtitle').textContent = `${params.season} · ${params.weather} · ${params.temp}°C`;
+  document.getElementById('res-tiaodiao').textContent = tiaodiao.replace(/^(调钓|浮漂)[^：:]*[：:]/, '').trim() || tiaodiao;
+  document.getElementById('res-bait').textContent = bait.replace(/^饵料[^：:]*[：:]/, '').trim() || bait;
+  document.getElementById('res-body').textContent = tips;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+</script>
+</body>
+</html>
