@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 然后写4-5条具体作钓建议，每条前面加"•"符号，每条80字以内，语气像老钓友在指导新手。`;
 
   try {
-    const response = await fetch('https://api.minimax.chat/v1/text/chatcompletion_v2', {
+    const response = await fetch('https://api.minimaxi.chat/v1/text/chatcompletion_v2', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
